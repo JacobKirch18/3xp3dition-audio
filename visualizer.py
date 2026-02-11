@@ -39,7 +39,9 @@ def audio_callback(indata, frames, time, status):
         start = log_indices[i]
         end = log_indices[i + 1]
         if start < end:
-            new_heights.append(np.mean(fft_magnitude[start:end]))
+            avg = np.mean(fft_magnitude[start:end])
+            boost = 1 + (i / NUM_BARS) * 3
+            new_heights.append(avg * boost)
         else:
             new_heights.append(0)
 
