@@ -44,7 +44,7 @@ def audio_callback(indata, frames, time, status):
         end = log_indices[i + 1]
         if start < end and end <= freq_bins:
             avg = np.mean(fft_magnitude[start:end])
-            boost = 0.3 + (i / NUM_BARS) * 20
+            boost = 0.3 + (i / NUM_BARS) * 10
             new_heights.append(avg * boost)
         else:
             new_heights.append(0)
@@ -97,7 +97,7 @@ win.addItem(bar_graph)
 def update():
     global bar_heights
     current_heights = bar_graph.opts['height']
-    target_heights = bar_heights * 2
+    target_heights = bar_heights * 3
     smoothed_heights = current_heights * SMOOTHING + target_heights * (1 - SMOOTHING)
     bar_graph.setOpts(height=smoothed_heights)
 
