@@ -89,4 +89,5 @@ class AudioVisualizer:
         current_heights = self.bar_graph.opts['height']
         target_heights = self.bar_heights * 3
         smoothed_heights = current_heights * self.smoothing + target_heights * (1 - self.smoothing)
+        smoothed_heights = np.clip(smoothed_heights, 0, 480)
         self.bar_graph.setOpts(height=smoothed_heights)
