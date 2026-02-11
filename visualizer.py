@@ -80,6 +80,11 @@ for i in range(NUM_BARS):
         r = int(255 * (1 - (ratio - 0.75) / 0.25) * 0.6 + 128)
         g = 0
         b = 255
+    
+    r = max(0, min(255, r))
+    g = max(0, min(255, g))
+    b = max(0, min(255, b))
+    
     colors.append((r, g, b))
 
 bar_graph = pg.BarGraphItem(x=range(NUM_BARS), height=bar_heights, width=0.8, brushes=colors)
