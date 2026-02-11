@@ -10,6 +10,7 @@ import sys
 SAMPLE_RATE = 44100
 CHUNK_SIZE = 1024
 NUM_BARS = 20
+SMOOTHING = 0.7
 
 bar_heights = np.zeros(NUM_BARS)
 
@@ -29,8 +30,18 @@ def audio_callback(indata, frames, time, status):
     fft_data = np.fft.rfft(audio_data)
     fft_magnitude = np.abs(fft_data)
 
-    bar_values = np.array_split(fft_magnitude[:len(fft_magnitude)//2], NUM_BARS)
-    bar_heights = np.array([np.mean(band) for band in bar_values])
+    freq_bins = len(fft_magnitude)
+    log_indices = np.logspace(np.log10(1), np.log10(freq_bins), NUM_BARS + 1, dtype=int)
+    new_heights = []
+    for i in range(NUM_BARS):
+        start = log_indices[i]
+        end = log_indices[i + 1]
+        if start < end:
+            new_heights.append(np.mean(fft_magnitude[start:end]))
+        else:
+            new_heights.append(0)
+
+    bar_heights = np.array(new_heights)
 
 device_id = find_device("CABLE Output")
 stream = sd.InputStream(callback=audio_callback, device=device_id, channels=2, samplerate=SAMPLE_RATE, blocksize=CHUNK_SIZE)
@@ -46,7 +57,11 @@ bar_graph = pg.BarGraphItem(x=range(NUM_BARS), height=bar_heights, width=0.8, br
 win.addItem(bar_graph)
 
 def update():
-    bar_graph.setOpts(height=bar_heights)
+    global bar_heights
+    current_heights = bar_graph.opts['height']
+    target_heights = bar_heights
+    smoothed_heights = current_heights * SMOOTHING + target_heights * (1 - SMOOTHING)
+    bar_graph.setOpts(height=smoothed_heights)
 
 timer = QTimer()
 timer.timeout.connect(update)
