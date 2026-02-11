@@ -54,8 +54,33 @@ app = QApplication(sys.argv)
 win = pg.plot(title="Audio Visualizer")
 win.setYRange(0, 500)
 win.setXRange(0, NUM_BARS)
+win.setBackground('k')
+win.hideAxis('left')
+win.hideAxis('bottom')
+win.showGrid(x=False, y=False)
 
-bar_graph = pg.BarGraphItem(x=range(NUM_BARS), height=bar_heights, width=0.8, brush='b')
+colors = []
+for i in range(NUM_BARS):
+    ratio = i / NUM_BARS
+    if ratio < 0.25:
+        r = 0
+        g = int(200 + 55 * (ratio / 0.25))
+        b = int(255 * (ratio / 0.25))
+    elif ratio < 0.5:
+        r = 0
+        g = int(255 * (1 - (ratio - 0.25) / 0.25))
+        b = 255
+    elif ratio < 0.75:
+        r = int(255 * ((ratio - 0.5) / 0.25))
+        g = 0
+        b = 255
+    else:
+        r = int(255 * (1 - (ratio - 0.75) / 0.25) * 0.6 + 128)
+        g = 0
+        b = 255
+    colors.append((r, g, b))
+
+bar_graph = pg.BarGraphItem(x=range(NUM_BARS), height=bar_heights, width=0.8, brushes=colors)
 win.addItem(bar_graph)
 
 def update():
