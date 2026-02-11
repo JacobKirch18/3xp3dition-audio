@@ -9,7 +9,7 @@ import sys
 
 SAMPLE_RATE = 44100
 CHUNK_SIZE = 1024
-NUM_BARS = 20
+NUM_BARS = 14
 SMOOTHING = 0.7
 
 bar_heights = np.zeros(NUM_BARS)
@@ -31,7 +31,9 @@ def audio_callback(indata, frames, time, status):
     fft_magnitude = np.abs(fft_data)
 
     freq_bins = len(fft_magnitude)
-    log_indices = np.logspace(np.log10(1), np.log10(freq_bins), NUM_BARS + 1, dtype=int)
+    log_indices = np.logspace(np.log10(2), np.log10(freq_bins), NUM_BARS, dtype=int)
+    log_indices = np.concatenate(([0], log_indices))
+
     new_heights = []
     for i in range(NUM_BARS):
         start = log_indices[i]
@@ -59,7 +61,7 @@ win.addItem(bar_graph)
 def update():
     global bar_heights
     current_heights = bar_graph.opts['height']
-    target_heights = bar_heights
+    target_heights = bar_heights * 5
     smoothed_heights = current_heights * SMOOTHING + target_heights * (1 - SMOOTHING)
     bar_graph.setOpts(height=smoothed_heights)
 
