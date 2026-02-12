@@ -9,3 +9,5 @@ because I am not on Linux, I could not get pycdio to work.
 I looked into ASPI/SPTI, and quickly decided I was not going to deal with that assembly-esque code.  
 Did not like the jumpscare reminiscent of Computer Architecture and Assembly Course...  
 (if any absolute nerds want to implement ASPI/SPTI please feel free to make a pr to which I will promptly respond with 'lgtm')  
+
+### warning to anybody that dares to try my awful code that I designed specifically for my use: there are a lot of dependencies that must be installed and configured perfectly
