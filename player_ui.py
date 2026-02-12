@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
+import os
 import sys
 import numpy as np
-from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSlider, QLabel)
+from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSlider, QLabel, QListWidget)
 from PyQt6.QtCore import Qt, QTimer
 from visualizer import AudioVisualizer
 import soundfile as sf
@@ -12,9 +13,11 @@ SAMPLE_RATE = 44100
 CHUNK_SIZE = 1024
 
 class MediaPlayerUI(QMainWindow):
-    def __init__(self, audio_file):
+    def __init__(self, folder_path):
         super().__init__()
-        self.audio_file = audio_file
+        self.folder_path = folder_path
+        self.playlist = []
+        self.current_track_index = 0
         self.stream = None
         self.audio_data_stereo = None
         self.audio_data_mono = None
@@ -23,18 +26,34 @@ class MediaPlayerUI(QMainWindow):
         self.total_frames = 0
 
         self.init_ui()
+        self.load_playlist()
         self.load_audio()
 
     def init_ui(self):
         self.setWindowTitle("Media Player")
-        self.setGeometry(100, 100, 800, 600)
+        self.setGeometry(100, 100, 1000, 600)
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
-        main_layout = QVBoxLayout(central_widget)
+
+        main_horizontal = QHBoxLayout(central_widget)
+
+        self.track_list = QListWidget()
+        self.track_list.setMaximumWidth(300)
+        self.track_list.itemDoubleClicked.connect(self.track_selected)
+        main_horizontal.addWidget(self.track_list)
+
+        player_widget = QWidget()
+        main_layout = QVBoxLayout(player_widget)
+        main_horizontal.addWidget(player_widget)
 
         self.visualizer = AudioVisualizer(num_bars=20, smoothing=0.7)
         main_layout.addWidget(self.visualizer.win)
+
+        self.song_label = QLabel("No song loaded")
+        self.song_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.song_label.setStyleSheet("font-size: 14pt; font-weight: bold;")
+        main_layout.addWidget(self.song_label)
 
         self.progress_bar = QSlider(Qt.Orientation.Horizontal)
         self.progress_bar.setMinimum(0)
@@ -52,6 +71,10 @@ class MediaPlayerUI(QMainWindow):
 
         controls_layout = QHBoxLayout()
 
+        self.prev_button = QPushButton("Previous")
+        self.prev_button.clicked.connect(self.previous_track)
+        controls_layout.addWidget(self.prev_button)
+
         self.play_button = QPushButton("Play")
         self.play_button.clicked.connect(self.toggle_play_pause)
         controls_layout.addWidget(self.play_button)
@@ -59,6 +82,10 @@ class MediaPlayerUI(QMainWindow):
         self.stop_button = QPushButton("Stop")
         self.stop_button.clicked.connect(self.stop)
         controls_layout.addWidget(self.stop_button)
+
+        self.next_button = QPushButton("Next")
+        self.next_button.clicked.connect(self.next_track)
+        controls_layout.addWidget(self.next_button)
 
         controls_layout.addStretch()
 
@@ -77,8 +104,23 @@ class MediaPlayerUI(QMainWindow):
         self.ui_timer.timeout.connect(self.update_progress)
         self.ui_timer.start(100)
 
+    def load_playlist(self):
+        for filename in sorted(os.listdir(self.folder_path)):
+            if filename.lower().endswith('.mp3'):
+                full_path = os.path.join(self.folder_path, filename)
+                self.playlist.append(full_path)
+                self.track_list.addItem(filename)
+
     def load_audio(self):
-        data, sr = sf.read(self.audio_file, always_2d=True)
+        if not self.playlist:
+            print("No audio files found in the folder.")
+            return
+
+        current_file = self.playlist[self.current_track_index]
+        data, sr = sf.read(current_file, always_2d=True)
+
+        self.song_label.setText(os.path.basename(current_file))
+        self.track_list.setCurrentRow(self.current_track_index)
 
         if data.shape[1] > 1:
             self.audio_data_stereo = data
@@ -111,6 +153,18 @@ class MediaPlayerUI(QMainWindow):
         outdata[:] = chunk_stereo
         self.visualizer.process_audio(chunk_mono)
     
+    def previous_track(self):
+        was_playing = self.is_playing
+        self.stop()
+
+        self.current_track_index -= 1
+        if self.current_track_index < 0:
+            self.current_track_index = len(self.playlist) - 1
+
+        self.load_audio()
+        if was_playing:
+            self.play()
+
     def toggle_play_pause(self):
         if self.is_playing:
             self.pause()
@@ -143,6 +197,28 @@ class MediaPlayerUI(QMainWindow):
         self.play_button.setText("Play")
         self.visualizer.bar_heights = np.zeros(self.visualizer.num_bars)
 
+    def next_track(self):
+        was_playing = self.is_playing
+        self.stop()
+
+        self.current_track_index += 1
+        if self.current_track_index >= len(self.playlist):
+            self.current_track_index = 0
+
+        self.load_audio()
+        if was_playing:
+            self.play()
+
+    def track_selected(self, item):
+        was_playing = self.is_playing
+        self.stop()
+
+        self.current_track_index = self.track_list.currentRow()
+
+        self.load_audio()
+        if was_playing:
+            self.play()
+
     def seek(self, value):
         self.position = int((value / 1000) * self.total_frames)
 
@@ -161,6 +237,6 @@ class MediaPlayerUI(QMainWindow):
     
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    player = MediaPlayerUI("test_audios/Kansas-City.mp3")
+    player = MediaPlayerUI("test_audios")
     player.show()
     sys.exit(app.exec())
