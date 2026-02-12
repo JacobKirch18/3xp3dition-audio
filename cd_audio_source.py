@@ -12,7 +12,7 @@ import time
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding='utf-8')
 
-musicbrainzngs.set_useragent("CD Audio Source", "1.0", "https://github.com/JacobKirch18/audio-player")
+musicbrainzngs.set_useragent("CD Audio Source", "1.0", "https://github.com/JacobKirch18/3xp3dition-audio")
 
 class CDAudioSource:
     def __init__(self):
@@ -121,7 +121,7 @@ class CDAudioSource:
             print(f"Ripping track {track_number}...")
             
             cmd = [
-                "C:\\Users\\jacob\\Downloads\\freac-1.1.7-windows-x64\\freac-1.1.7-x64\\freaccmd.exe",
+                "freaccmd.exe",
                 f"--encoder=sndfile-wave",
                 f"--drive={cd_drive}:",
                 f"--track={track_number}",
@@ -153,8 +153,10 @@ if __name__ == "__main__":
     cd = CDAudioSource()
     if cd.detect_cd():
         tracks = cd.get_track_info()
+
         wav_path = cd.rip_track_to_wav(1)
         print(f"wav file: {wav_path}")
+
         # print(f"\n{cd.get_disc_info_string()}\n")
         # for track in tracks:
         #     mins = track['length'] // 60

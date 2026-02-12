@@ -8,14 +8,17 @@ from PyQt6.QtCore import Qt, QTimer
 from visualizer import AudioVisualizer
 import soundfile as sf
 import sounddevice as sd
+import threading
 
 SAMPLE_RATE = 44100
 CHUNK_SIZE = 1024
 
 class MediaPlayerUI(QMainWindow):
-    def __init__(self, folder_path):
+    def __init__(self, source_path=None, is_cd=False):
         super().__init__()
-        self.folder_path = folder_path
+        self.source_path = source_path
+        self.is_cd = is_cd
+        self.cd_source = None
         self.playlist = []
         self.current_track_index = 0
         self.stream = None
@@ -24,9 +27,16 @@ class MediaPlayerUI(QMainWindow):
         self.position = 0
         self.is_playing = False
         self.total_frames = 0
+        self.rip_queue = []
+        self.ripping_thread = None
 
         self.init_ui()
-        self.load_playlist()
+
+        if is_cd:
+            self.load_cd()
+        else:
+            self.load_playlist()
+
         self.load_audio()
 
     def init_ui(self):
@@ -104,10 +114,45 @@ class MediaPlayerUI(QMainWindow):
         self.ui_timer.timeout.connect(self.update_progress)
         self.ui_timer.start(100)
 
+    def load_cd(self):
+        from cd_audio_source import CDAudioSource
+
+        self.cd_source = CDAudioSource()
+
+        if not self.cd_source.detect_cd():
+            print("No CD detected")
+            return
+        
+        tracks = self.cd_source.get_track_info()
+
+        for track in tracks:
+            track_name = f"{track['number']:02d}. {track['title']}"
+            self.playlist.append(track)
+            self.track_list.addItem(track_name)
+
+        self.setWindowTitle(f"CD Player - {self.cd_source.get_disc_info_string()}")
+
+        self.start_background_ripper()
+
+        print(f"Loaded {len(self.playlist)} tracks from CD")
+
+    def start_background_ripper(self):
+        self.rip_queue = list(range(2, len(self.playlist) + 1))
+
+        def ripper_worker():
+            while self.rip_queue:
+                track_num = self.rip_queue.pop(0)
+                print(f"Ripping track {track_num} in background...")
+                self.cd_source.rip_track_to_wav(track_num)
+        
+        self.ripping_thread = threading.Thread(target=ripper_worker, daemon=True)
+        self.ripping_thread.start()
+        print("Background ripper started")
+
     def load_playlist(self):
-        for filename in sorted(os.listdir(self.folder_path)):
+        for filename in sorted(os.listdir(self.source_path)):
             if filename.lower().endswith('.mp3'):
-                full_path = os.path.join(self.folder_path, filename)
+                full_path = os.path.join(self.source_path, filename)
                 self.playlist.append(full_path)
                 self.track_list.addItem(filename)
 
@@ -116,10 +161,23 @@ class MediaPlayerUI(QMainWindow):
             print("No audio files found in the folder.")
             return
 
-        current_file = self.playlist[self.current_track_index]
-        data, sr = sf.read(current_file, always_2d=True)
+        if self.is_cd:
+            track_num = self.current_track_index + 1
+            print(f"Ripping track {track_num} (foreground)...")
+            wav_path = self.cd_source.rip_track_to_wav(track_num)
 
-        self.song_label.setText(os.path.basename(current_file))
+            if not wav_path:
+                print(f"Failed to rip track {track_num}.")
+                return
+            
+            current_file = wav_path
+            track_info = self.playlist[self.current_track_index]
+            self.song_label.setText(f"{track_num:02d}. {track_info['title']}")
+        else:
+            current_file = self.playlist[self.current_track_index]
+            self.song_label.setText(os.path.basename(current_file))
+        
+        data, sr = sf.read(current_file, always_2d=True)
         self.track_list.setCurrentRow(self.current_track_index)
 
         if data.shape[1] > 1:
@@ -237,6 +295,11 @@ class MediaPlayerUI(QMainWindow):
     
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    player = MediaPlayerUI("test_audios")
+
+    if len(sys.argv) > 1 and sys.argv[1] == "--cd":
+        player = MediaPlayerUI(is_cd=True)
+    else:
+        player = MediaPlayerUI("test_audios")
+
     player.show()
     sys.exit(app.exec())
