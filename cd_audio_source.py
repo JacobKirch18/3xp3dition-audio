@@ -3,6 +3,11 @@
 import discid
 import musicbrainzngs
 import sys
+import subprocess
+import tempfile
+import os
+import struct
+import time
 
 if sys.platform == "win32":
     sys.stdout.reconfigure(encoding='utf-8')
@@ -14,6 +19,7 @@ class CDAudioSource:
         self.disc = None
         self.tracks = []
         self.disc_info = None
+        self.temp_dir = tempfile.gettempdir()
 
     def detect_cd(self):
         try:
@@ -29,6 +35,7 @@ class CDAudioSource:
             print("No CD detected")
             return []
         try:
+            time.sleep(1)
             result = musicbrainzngs.get_releases_by_discid(
                 self.disc.id,
                 includes=['artists', 'recordings']
@@ -79,14 +86,77 @@ class CDAudioSource:
         if self.disc_info:
             return f"{self.disc_info['artist']} - {self.disc_info['album']}"
         else:
-            return "Unknown CD"
+            return "Unknown CD"    
+
+    def _find_cd_drive(self):
+        import string
+        from ctypes import windll
+        
+        bitmask = windll.kernel32.GetLogicalDrives()
+        for letter in string.ascii_uppercase:
+            if bitmask & 1:
+                drive = f"{letter}"
+                if windll.kernel32.GetDriveTypeW(f"{drive}:\\") == 5:
+                    return letter
+            bitmask >>= 1
+        return None
+
+    def rip_track_to_wav(self, track_number):
+        if not self.tracks:
+            print("No tracks loaded")
+            return None
+        
+        output_path = os.path.join(self.temp_dir, f"track_{track_number:02d}.wav")
+
+        if os.path.exists(output_path):
+            print(f"Track {track_number} already ripped")
+            return output_path
+        
+        try:
+            cd_drive = self._find_cd_drive()
+            if not cd_drive:
+                print("Could not find CD drive")
+                return None
+            
+            print(f"Ripping track {track_number}...")
+            
+            cmd = [
+                "C:\\Users\\jacob\\Downloads\\freac-1.1.7-windows-x64\\freac-1.1.7-x64\\freaccmd.exe",
+                f"--encoder=sndfile-wave",
+                f"--drive={cd_drive}:",
+                f"--track={track_number}",
+                "-o", output_path
+            ]
+            
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            
+            if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
+                print(f"Successfully ripped track {track_number} to {output_path}")
+                return output_path
+            else:
+                print(f"Rip failed.")
+                print(f"stdout: {result.stdout}")
+                print(f"stderr: {result.stderr}")
+                return None
+                
+        except FileNotFoundError:
+            print("freaccmd.exe not found. Make sure it's in your PATH or project folder.")
+            return None
+
+        except Exception as e:
+            print(f"Error: {e}")
+            import traceback
+            traceback.print_exc()
+        return None
 
 if __name__ == "__main__":
     cd = CDAudioSource()
     if cd.detect_cd():
         tracks = cd.get_track_info()
-        print(f"\n{cd.get_disc_info_string()}\n")
-        for track in tracks:
-            mins = track['length'] // 60
-            secs = track['length'] % 60
-            print(f"{track['number']}. {track['title']} ({mins}:{secs:02d})")
+        wav_path = cd.rip_track_to_wav(1)
+        print(f"wav file: {wav_path}")
+        # print(f"\n{cd.get_disc_info_string()}\n")
+        # for track in tracks:
+        #     mins = track['length'] // 60
+        #     secs = track['length'] % 60
+        #     print(f"{track['number']}. {track['title']} ({mins}:{secs:02d})")
