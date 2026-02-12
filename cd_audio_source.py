@@ -1,5 +1,11 @@
+#!/usr/bin/env python3
+
 import discid
 import musicbrainzngs
+import sys
+
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding='utf-8')
 
 musicbrainzngs.set_useragent("CD Audio Source", "1.0", "https://github.com/JacobKirch18/audio-player")
 
@@ -43,7 +49,7 @@ class CDAudioSource:
                     track = {
                         'number': i + 1,
                         'title': track_data['recording']['title'],
-                        'length': self.disc.tracks[i].length,
+                        'length': self.disc.tracks[i].length // 75,
                         'offset': self.disc.tracks[i].offset
                     }
                     self.tracks.append(track)
@@ -64,7 +70,7 @@ class CDAudioSource:
             self.tracks.append({
                 'number': track.number,
                 'title': f"Track {track.number}",
-                'length': track.length,
+                'length': track.length // 75,
                 'offset': track.offset
             })
         return self.tracks
