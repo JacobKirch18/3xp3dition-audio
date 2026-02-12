@@ -292,6 +292,31 @@ class MediaPlayerUI(QMainWindow):
         minutes = int(seconds // 60)
         secs = int(seconds % 60)
         return f"{minutes:02d}:{secs:02d}"
+
+    def closeEvent(self, event):
+        print("Closing application, cleaning up...")
+        
+        if hasattr(self, 'ui_timer'):
+            self.ui_timer.stop()
+        
+        if self.stream:
+            try:
+                self.stream.stop()
+                self.stream.close()
+            except Exception as e:
+                print(f"Error stopping stream: {e}")
+        
+        self.audio_data_stereo = None
+        self.audio_data_mono = None
+        
+        import time
+        time.sleep(0.1)
+        
+        if self.is_cd and self.cd_source:
+            print(f"Attempting to clean up {len(self.cd_source.ripped_files)} files...")
+            self.cd_source.cleanup_temp_files()
+        
+        event.accept()
     
 if __name__ == "__main__":
     app = QApplication(sys.argv)

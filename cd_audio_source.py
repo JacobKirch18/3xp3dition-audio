@@ -20,6 +20,7 @@ class CDAudioSource:
         self.tracks = []
         self.disc_info = None
         self.temp_dir = tempfile.gettempdir()
+        self.ripped_files = []
 
     def detect_cd(self):
         try:
@@ -110,6 +111,8 @@ class CDAudioSource:
 
         if os.path.exists(output_path):
             print(f"Track {track_number} already ripped")
+            if output_path not in self.ripped_files:
+                self.ripped_files.append(output_path)
             return output_path
         
         try:
@@ -132,6 +135,7 @@ class CDAudioSource:
             
             if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
                 print(f"Successfully ripped track {track_number} to {output_path}")
+                self.ripped_files.append(output_path)
                 return output_path
             else:
                 print(f"Rip failed.")
@@ -148,6 +152,30 @@ class CDAudioSource:
             import traceback
             traceback.print_exc()
         return None
+
+    def cleanup_temp_files(self):
+        print(f"Starting cleanup of {len(self.ripped_files)} files...")
+        
+        deleted_count = 0
+        failed_count = 0
+        
+        for file_path in self.ripped_files:
+            try:
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                    print(f"Deleted: {file_path}")
+                    deleted_count += 1
+                else:
+                    print(f"File not found: {file_path}")
+            except PermissionError as e:
+                print(f"Permission denied (file may be in use): {file_path}")
+                failed_count += 1
+            except Exception as e:
+                print(f"Failed to delete {file_path}: {e}")
+                failed_count += 1
+        
+        print(f"Cleanup complete: {deleted_count} deleted, {failed_count} failed")
+        self.ripped_files.clear()
 
 if __name__ == "__main__":
     cd = CDAudioSource()
