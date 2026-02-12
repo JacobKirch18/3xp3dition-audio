@@ -1,5 +1,15 @@
 # 3xp3dition audio
 
+## Dependencies
+- freaccmd.exe must be installed and set to path
+- all python packages in import statements (obviously)
+
+## Using
+- run with --cd argument and it will attempt to find an optical drive and play from it (startup may take a little to rip track #1)
+- running with no arguments looks for a hardcoded file path I was using for testing with mp3 files
+- track data should display, if not when closing the app, there is probably an error from MusicBrainz that the query was denied
+
+### author note
 As anyone reading this should know, Clair Obscur Expedition 33 is one of the greatest games of all time.  
 I recently bought the special edition 8 CD box with the entirety of the 8+ hour soundtrack.  
 I refuse to use Windows Media Player, (because I have class) so I created this as a thumbs down to Microsoft.  
