@@ -147,7 +147,7 @@ class MediaPlayerUI(QMainWindow):
         
         self.ripping_thread = threading.Thread(target=ripper_worker, daemon=True)
         self.ripping_thread.start()
-        print("Background ripper started")
+        print("\nBackground ripper started")
 
     def load_playlist(self):
         for filename in sorted(os.listdir(self.source_path)):
@@ -205,7 +205,7 @@ class MediaPlayerUI(QMainWindow):
         if len(chunk_stereo) < frames:
             chunk_stereo = np.pad(chunk_stereo, ((0, frames - len(chunk_stereo)), (0, 0)))
             chunk_mono = np.pad(chunk_mono, (0, frames - len(chunk_mono)))
-            self.position = 0
+            self.next_track()
         else:
             self.position += frames
 
