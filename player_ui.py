@@ -132,8 +132,6 @@ class MediaPlayerUI(QMainWindow):
 
         self.setWindowTitle(f"CD Player - {self.cd_source.get_disc_info_string()}")
 
-        self.start_background_ripper()
-
         print(f"Loaded {len(self.playlist)} tracks from CD")
 
     def start_background_ripper(self):
@@ -173,6 +171,10 @@ class MediaPlayerUI(QMainWindow):
             current_file = wav_path
             track_info = self.playlist[self.current_track_index]
             self.song_label.setText(f"{track_num:02d}. {track_info['title']}")
+
+            if not self.ripping_thread or not self.ripping_thread.is_alive():
+                self.start_background_ripper()
+
         else:
             current_file = self.playlist[self.current_track_index]
             self.song_label.setText(os.path.basename(current_file))

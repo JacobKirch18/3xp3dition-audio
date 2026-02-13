@@ -131,10 +131,10 @@ class CDAudioSource:
                 "-o", output_path
             ]
             
-            result = subprocess.run(cmd, capture_output=True, text=True)
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
             
             if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
-                print(f"Successfully ripped track {track_number} to {output_path}")
+                print(f"Successfully ripped track {track_number}")
                 self.ripped_files.append(output_path)
                 return output_path
             else:
@@ -143,6 +143,10 @@ class CDAudioSource:
                 print(f"stderr: {result.stderr}")
                 return None
                 
+        except subprocess.TimeoutExpired:
+            print(f"Ripping track {track_number} timed out.")
+            return None
+        
         except FileNotFoundError:
             print("freaccmd.exe not found. Make sure it's in your PATH or project folder.")
             return None
