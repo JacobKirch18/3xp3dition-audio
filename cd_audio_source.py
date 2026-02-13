@@ -21,6 +21,7 @@ class CDAudioSource:
         self.disc_info = None
         self.temp_dir = tempfile.gettempdir()
         self.ripped_files = []
+        self.current_process = None
 
     def detect_cd(self):
         try:
@@ -134,15 +135,28 @@ class CDAudioSource:
                 "-o", output_path
             ]
             
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+            self.current_process = subprocess.Popen(
+                cmd, 
+                stdout=subprocess.PIPE, 
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            
+            try:
+                stdout, stderr = self.current_process.communicate(timeout=120)
+                self.current_process = None
+            except subprocess.TimeoutExpired:
+                print(f"Ripping track {track_number} timed out.", flush=True)
+                if self.current_process:
+                    self.current_process.kill()
+                    self.current_process = None
+                return 
             
             if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
                 print(f"Successfully ripped track {track_number}")
                 return output_path
             else:
                 print(f"Rip failed.")
-                print(f"stdout: {result.stdout}")
-                print(f"stderr: {result.stderr}")
                 return None
                 
         except subprocess.TimeoutExpired:
@@ -158,6 +172,17 @@ class CDAudioSource:
             import traceback
             traceback.print_exc()
         return None
+
+    def stop_current_rip(self):
+        if self.current_process:
+            print("Killing active rip process...", flush=True)
+            try:
+                self.current_process.kill()
+                self.current_process.wait(timeout=2)
+            except Exception as e:
+                print(f"Error killing process: {e}", flush=True)
+            finally:
+                self.current_process = None
 
     def cleanup_temp_files(self):
         print(f"Starting cleanup of {len(self.ripped_files)} files...")

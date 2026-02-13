@@ -29,6 +29,7 @@ class MediaPlayerUI(QMainWindow):
         self.total_frames = 0
         self.rip_queue = []
         self.ripping_thread = None
+        self.stop_ripping = False
 
         self.init_ui()
 
@@ -136,9 +137,10 @@ class MediaPlayerUI(QMainWindow):
 
     def start_background_ripper(self):
         self.rip_queue = list(range(2, len(self.playlist) + 1))
+        self.stop_ripping = False
 
         def ripper_worker():
-            while self.rip_queue:
+            while self.rip_queue and not self.stop_ripping:
                 track_num = self.rip_queue.pop(0)
                 print(f"Ripping track {track_num} in background...")
                 self.cd_source.rip_track_to_wav(track_num)
@@ -301,6 +303,15 @@ class MediaPlayerUI(QMainWindow):
         if hasattr(self, 'ui_timer'):
             self.ui_timer.stop()
         
+        self.stop_ripping = True
+
+        if self.is_cd and self.cd_source:
+            self.cd_source.stop_current_rip()
+
+        if self.ripping_thread and self.ripping_thread.is_alive():
+            print("Waiting for background ripper to stop...")
+            self.ripping_thread.join(timeout=2)
+
         if self.stream:
             try:
                 self.stream.stop()
