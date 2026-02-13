@@ -115,6 +115,9 @@ class CDAudioSource:
                 self.ripped_files.append(output_path)
             return output_path
         
+        if output_path not in self.ripped_files:
+            self.ripped_files.append(output_path)
+
         try:
             cd_drive = self._find_cd_drive()
             if not cd_drive:
@@ -135,7 +138,6 @@ class CDAudioSource:
             
             if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
                 print(f"Successfully ripped track {track_number}")
-                self.ripped_files.append(output_path)
                 return output_path
             else:
                 print(f"Rip failed.")
