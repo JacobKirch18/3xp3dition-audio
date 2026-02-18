@@ -21,3 +21,6 @@ Did not like the jumpscare reminiscent of Computer Architecture and Assembly Cou
 (if any absolute nerds want to implement ASPI/SPTI please feel free to make a pr to which I will promptly respond with 'lgtm')  
 
 ### warning to anybody that dares to try my awful code that I designed specifically for my use: there are a lot of dependencies that must be installed and configured perfectly
+
+### Screenshot
+<img width="2488" height="1580" alt="image" src="https://github.com/user-attachments/assets/26075138-34e6-4bda-9921-26391bdbdeaf" />
