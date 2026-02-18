@@ -45,7 +45,23 @@ class CDAudioSource:
 
             if result.get('disc'):
                 release = result['disc']['release-list'][0]
-                medium = release['medium-list'][0]
+
+                disc_info = result['disc']
+                medium_index = 0
+
+                if 'offset-list'in disc_info:
+                    for i, medium in enumerate(release['medium-list']):
+                        if 'disc-list' in medium:
+                            for disc in medium['disc-list']:
+                                if disc['id'] == self.disc.id:
+                                    medium_index = i
+                                    break
+
+                if medium_index < len(release['medium-list']):
+                    medium = release['medium-list'][medium_index]
+                else:
+                    medium = release['medium-list'][0]
+
                 track_list = medium['track-list']
 
                 self.disc_info = {
