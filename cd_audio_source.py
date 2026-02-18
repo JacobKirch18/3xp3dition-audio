@@ -102,7 +102,11 @@ class CDAudioSource:
     
     def get_disc_info_string(self):
         if self.disc_info:
-            return f"{self.disc_info['artist']} - {self.disc_info['album']}"
+            disc_num = self.disc_info.get('disc_number', '')
+            if disc_num:
+                return f"{self.disc_info['artist']} - {self.disc_info['album']} (Disc {disc_num})"
+            else:
+                return f"{self.disc_info['artist']} - {self.disc_info['album']}"
         else:
             return "Unknown CD"    
 
