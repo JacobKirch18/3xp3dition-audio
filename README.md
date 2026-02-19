@@ -7,7 +7,7 @@
 ## Using
 - run with --cd argument and it will attempt to find an optical drive and play from it (startup may take a little to rip track #1)
 - running with no arguments looks for a hardcoded file path I was using for testing with mp3 files
-- track data should display, if not when closing the app, there is probably an error from MusicBrainz that the query was denied
+- track data should display, there is probably an error from MusicBrainz that the query was denied
 
 ### author note
 As anyone reading this should know, Clair Obscur Expedition 33 is one of the greatest games of all time.  
